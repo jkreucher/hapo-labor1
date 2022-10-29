@@ -19,7 +19,7 @@
 // 7 segment display data
 //  0bHGFEDCBA active low
 const uint16_t segment_data[16] = {
-    //HGFEDCBA
+    //HGFEDCBAxxxx1234
     0b1100000000000000, // 0
     0b1111100100000000, // 1
     0b1010010000000000, // 2
@@ -39,10 +39,11 @@ const uint16_t segment_data[16] = {
 };
 // 7 segment display digits
 const uint16_t segment_digit[4] = {
-    0x8,
-    0x4,
-    0x2,
-    0x1
+    //xxxx1234
+    0b00001000,
+    0b00000100,
+    0b00000010,
+    0b00000001
 };
 
 

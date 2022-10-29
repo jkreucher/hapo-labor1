@@ -18,34 +18,39 @@
 
 // 7 segment display data
 //  0bHGFEDCBA active low
-const uint8_t segment_data[16] = {
-    0b11000000, // 0
-    0b11111001, // 1
-    0b11100100, // 2
-    0b10110000, // 3
-    0b10010001, // 4
-    0b10010010, // 5
-    0b10000010, // 6
-    0b11111000, // 7
-    0b10000000, // 8
-    0b10010000, // 9
-    0b10001000, // A
-    0b10000011, // B
-    0b11000100, // C
-    0b10100001, // D
-    0b10000110, // E
-    0b10001110, // F
+const uint16_t segment_data[16] = {
+    //HGFEDCBA
+    0b1100000000000000, // 0
+    0b1111100100000000, // 1
+    0b1010010000000000, // 2
+    0b1011000000000000, // 3
+    0b1001100100000000, // 4
+    0b1001001000000000, // 5
+    0b1000001000000000, // 6
+    0b1111100000000000, // 7
+    0b1000000000000000, // 8
+    0b1001000000000000, // 9
+    0b1000100000000000, // A
+    0b1000001100000000, // B
+    0b1100011000000000, // C
+    0b1010000100000000, // D
+    0b1000011000000000, // E
+    0b1000111000000000, // F
 };
 // 7 segment display digits
 const uint16_t segment_digit[4] = {
-    0x100,
-    0x200,
-    0x400,
-    0x800
+    0x8,
+    0x4,
+    0x2,
+    0x1
 };
 
 
 // Input / Output
+BusOut busLeds(PIN_LED1, PIN_LED2, PIN_LED3, PIN_LED4);
+DigitalIn pinSW1(PIN_SW1);
+DigitalIn pinSW2(PIN_SW2);
+DigitalIn pinSW3(PIN_SW3);
 DigitalOut pinDOUT(PIN_DOUT);
 DigitalOut pinSCLK(PIN_SCLK);
 DigitalOut pinLTCH(PIN_LTCH);
@@ -57,7 +62,15 @@ void shift_out(uint16_t wData);
 
 // main() runs in its own thread in the OS
 int main() {
-    shift_out(segment_digit[0] | segment_data[0]);
+    uint8_t data = 0;
+
+    while(1) {
+        shift_out(segment_digit[0] | segment_data[data]);
+        busLeds = ~data;
+        data++;
+        if(data==16) data=0;
+        ThisThread::sleep_for(500ms);
+    }
 }
 
 

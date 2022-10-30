@@ -16,6 +16,10 @@
 #define PIN_LED3    PA_6
 #define PIN_LED4    PA_5
 
+// user parameters
+#define BUTTON_LONG     50
+#define BUTTON_SHORT    5
+
 // 7 segment display data
 //  0bHGFEDCBA active low
 const uint16_t segment_data[16] = {
@@ -45,7 +49,14 @@ const uint16_t segment_digit[4] = {
     0b00000010,
     0b00000001
 };
+// bar graph pattern
+const uint8_t bargraph_data[5] = {
+    0x0, 0x1, 0x3, 0x7, 0xF
+};
 
+// global variables
+uint8_t bSW1_Timer=0, bSW2_Timer=0, bSW3_Timer=0;
+int8_t bValue=0, bDigit=0, bBar=0;
 
 // Input / Output
 BusOut busLeds(PIN_LED1, PIN_LED2, PIN_LED3, PIN_LED4);
@@ -58,24 +69,24 @@ DigitalOut pinLTCH(PIN_LTCH);
 
 
 // Prototypes
-void shift_out(uint16_t wData);
+void vShiftOut(uint16_t wData);
+void vCheckButtons();
 
 
 // main() runs in its own thread in the OS
 int main() {
-    uint8_t data = 0;
+    // init
+    vShiftOut(segment_digit[bDigit] | segment_data[bValue]);
+    busLeds = ~bargraph_data[bBar];
 
     while(1) {
-        shift_out(segment_digit[0] | segment_data[data]);
-        busLeds = ~data;
-        data++;
-        if(data==16) data=0;
-        ThisThread::sleep_for(500ms);
+        vCheckButtons();
+        ThisThread::sleep_for(10ms);
     }
 }
 
 
-void shift_out(uint16_t wData) {
+void vShiftOut(uint16_t wData) {
     for(uint8_t i=0; i<16; i++) {
         // MSB first
         pinDOUT = (wData & (0x8000 >> i));
@@ -86,4 +97,94 @@ void shift_out(uint16_t wData) {
     // latch outputs
     pinLTCH = 1;
     pinLTCH = 0;
+}
+
+
+void vCheckButtons() {
+    // check switch 1
+    if(pinSW1 == 0) {
+        if(bSW1_Timer <= BUTTON_LONG) {
+            if(bSW1_Timer == BUTTON_SHORT) {
+                // event: short press
+            }
+            if(bSW1_Timer == BUTTON_LONG) {
+                // event: long press
+                bValue--;
+                if(bValue < 0) bValue=0xF;
+                // update display
+                vShiftOut(segment_digit[bDigit] | segment_data[bValue]);
+            }
+            bSW1_Timer++;
+        } 
+    } else {
+        if((bSW1_Timer >= BUTTON_SHORT) && (bSW1_Timer <= BUTTON_LONG)) {
+            // event: released from short
+            bValue++;
+            if(bValue > 0xF) bValue=0x0;
+            // update display
+            vShiftOut(segment_digit[bDigit] | segment_data[bValue]);
+        }
+        if(bSW1_Timer > BUTTON_LONG) {
+            // event: released from long
+        }
+        bSW1_Timer = 0;
+    }
+
+    // check switch 2
+    if(pinSW2 == 0) {
+        if(bSW2_Timer <= BUTTON_LONG) {
+            if(bSW2_Timer == BUTTON_SHORT) {
+                // event: short press
+            }
+            if(bSW2_Timer == BUTTON_LONG) {
+                // event: long press
+                bDigit--;
+                if(bDigit < 0) bDigit=3;
+                // update display
+                vShiftOut(segment_digit[bDigit] | segment_data[bValue]);
+            }
+            bSW2_Timer++;
+        } 
+    } else {
+        if((bSW2_Timer >= BUTTON_SHORT) && (bSW2_Timer <= BUTTON_LONG)) {
+            // event: released from short
+            bDigit++;
+            if(bDigit > 3) bDigit=0;
+            // update display
+            vShiftOut(segment_digit[bDigit] | segment_data[bValue]);
+        }
+        if(bSW2_Timer > BUTTON_LONG) {
+            // event: released from long
+        }
+        bSW2_Timer = 0;
+    }
+
+    // check switch 3
+    if(pinSW3 == 0) {
+        if(bSW3_Timer <= BUTTON_LONG) {
+            if(bSW3_Timer == BUTTON_SHORT) {
+                // event: short press
+            }
+            if(bSW3_Timer == BUTTON_LONG) {
+                // event: long press
+                bBar--;
+                if(bBar < 0) bBar = sizeof(bargraph_data) - 1;
+                // update leds
+                busLeds = ~bargraph_data[bBar];
+            }
+            bSW3_Timer++;
+        } 
+    } else {
+        if((bSW3_Timer >= BUTTON_SHORT) && (bSW3_Timer <= BUTTON_LONG)) {
+            // event: released from short
+            bBar++;
+            if(bBar >= sizeof(bargraph_data)) bBar=0;
+            // update leds
+            busLeds = ~bargraph_data[bBar];
+        }
+        if(bSW3_Timer > BUTTON_LONG) {
+            // event: released from long
+        }
+        bSW3_Timer = 0;
+    }
 }

@@ -55,8 +55,11 @@ const uint8_t bargraph_data[5] = {
 };
 
 // global variables
+volatile uint8_t update=0;
 uint8_t bSW1_Timer=0, bSW2_Timer=0, bSW3_Timer=0;
 int8_t bValue=0, bDigit=0, bBar=0;
+
+Ticker tUpdate;
 
 // Input / Output
 BusOut busLeds(PIN_LED1, PIN_LED2, PIN_LED3, PIN_LED4);
@@ -69,6 +72,7 @@ DigitalOut pinLTCH(PIN_LTCH);
 
 
 // Prototypes
+void vUpdate();
 void vShiftOut(uint16_t wData);
 void vCheckButtons();
 
@@ -79,10 +83,21 @@ int main() {
     vShiftOut(segment_digit[bDigit] | segment_data[bValue]);
     busLeds = ~bargraph_data[bBar];
 
+    // update ticker
+    tUpdate.attach(&vUpdate, 10ms);
+
     while(1) {
         vCheckButtons();
-        ThisThread::sleep_for(10ms);
+
+        // wait for next update period
+        update = 0;
+        while(!update);
     }
+}
+
+
+void vUpdate() {
+    update = 1;
 }
 
 
